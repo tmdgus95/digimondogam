@@ -1,9 +1,9 @@
-import DigimonCard from "@/components/DigimonCard";
+import DigimonCardList from "@/components/DigimonCardList";
 
 export default function Home() {
   return (
     <main>
-      <DigimonCard />
+      <DigimonCardList />
     </main>
   );
 }
