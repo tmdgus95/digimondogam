@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "supabase:gen-types": "npx supabase gen types typescript --project-id \"qjxxdvxomrxyvgtvzqsk\" --schema public > types/supabase.ts"
+    "supabase:gen-types": "npx supabase gen types typescript --project-id \"ibtztdqbeumzjpjqwcll\" --schema public > types/supabase.ts"
   },
   "dependencies": {
     "@supabase/auth-ui-react": "^0.4.7",
