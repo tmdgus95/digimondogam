@@ -28,12 +28,6 @@ const DigimonCardList = () => {
   });
 
   useEffect(() => {
-    if (data) {
-      console.log("Fetched data with details:", data);
-    }
-  }, [data]);
-
-  useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {

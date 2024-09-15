@@ -24,6 +24,7 @@ const Header = () => {
   const handleLogout = async () => {
     await supabaseClient.auth.signOut();
     resetSession();
+    window.location.reload();
   };
 
   const handleLogin = async () => {

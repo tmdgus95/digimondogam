@@ -1,5 +1,10 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { supabaseClient } from "@/lib/client/supabaseClient";
+import { FcLike, FcLikePlaceholder } from "react-icons/fc";
+import { queryClient } from "@/config/ReactQueryClientProvider";
+import { useAuthStore } from "@/store/authStore";
 
 interface CardProps {
   name: string;
@@ -7,6 +12,7 @@ interface CardProps {
   digimonId: string;
   attributes: string;
   level: string;
+  userId?: string;
 }
 
 const DigimonCard: React.FC<CardProps> = ({
@@ -15,9 +21,83 @@ const DigimonCard: React.FC<CardProps> = ({
   digimonId,
   attributes,
   level,
+  userId,
 }) => {
   const nameRef = useRef<HTMLParagraphElement>(null);
+  const { user } = useAuthStore();
   const [isTruncated, setIsTruncated] = useState(false);
+
+  const fetchLikedStatus = async () => {
+    const { data, error } = await supabaseClient
+      .from("digimonCard")
+      .select("isLiked")
+      .eq("digimonId", digimonId)
+      .eq("userId", user?.email_prefix)
+      .single();
+
+    if (error) {
+      console.error("좋아요 상태 불러오기 실패:", error.message);
+      return false;
+    }
+
+    return data?.isLiked ?? false;
+  };
+
+  const { data: liked, refetch } = useQuery({
+    queryKey: ["likedStatus", digimonId, userId],
+    queryFn: fetchLikedStatus,
+  });
+
+  const toggleLike = async () => {
+    if (liked) {
+      const { error } = await supabaseClient
+        .from("digimonCard")
+        .update({ isLiked: false })
+        .eq("digimonId", digimonId)
+        .eq("userId", user?.email_prefix);
+      if (error) throw new Error("좋아요 해제 중 오류 발생");
+    } else {
+      const { data, error } = await supabaseClient
+        .from("digimonCard")
+        .select("*")
+        .eq("digimonId", digimonId)
+        .eq("userId", user?.email_prefix)
+        .single();
+
+      if (data) {
+        const { error: updateError } = await supabaseClient
+          .from("digimonCard")
+          .update({ isLiked: true })
+          .eq("digimonId", digimonId)
+          .eq("userId", user?.email_prefix);
+        if (updateError) throw new Error("좋아요 상태 업데이트 중 오류 발생");
+      } else {
+        const { error: insertError } = await supabaseClient
+          .from("digimonCard")
+          .insert([
+            {
+              digimonId,
+              userId: user?.email_prefix,
+              name,
+              image,
+              attributes,
+              level,
+              isLiked: true,
+            },
+          ]);
+        if (insertError) throw new Error("좋아요 추가 중 오류 발생");
+      }
+    }
+  };
+
+  const { mutate } = useMutation({
+    mutationFn: toggleLike,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["likedStatus", digimonId, userId],
+      });
+    },
+  });
 
   useEffect(() => {
     if (nameRef.current) {
@@ -63,6 +143,14 @@ const DigimonCard: React.FC<CardProps> = ({
             </div>
           )}
         </div>
+
+        <button onClick={() => mutate()} className="ml-4">
+          {liked ? (
+            <FcLike size={24} className="hover:scale-125" />
+          ) : (
+            <FcLikePlaceholder size={24} className="hover:scale-125" />
+          )}
+        </button>
       </div>
 
       <div className="mb-4 flex h-32 w-full items-center justify-center bg-white">
